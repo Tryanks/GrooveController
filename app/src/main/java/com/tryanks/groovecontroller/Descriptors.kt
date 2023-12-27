@@ -3,21 +3,24 @@ package com.tryanks.groovecontroller
 import android.bluetooth.BluetoothHidDevice
 
 enum class ControlEvent(val value: Int) {
-    LZoneTap(0),
-    LZoneUp(1),
-    LZoneDown(2),
-    LZoneLeft(3),
-    LZoneRight(4),
+    None(0),
+    Tap(1),
+    Up(2),
+    UpRight(3),
+    Right(4),
+    DownRight(5),
+    Down(6),
+    DownLeft(7),
+    Left(8),
+    UpLeft(9);
 
-    RZoneTap(5),
-    RZoneUp(6),
-    RZoneDown(7),
-    RZoneLeft(8),
-    RZoneRight(9),
-    ;
+    companion object {
+        fun fromInt(value: Int) = entries.first { it.value == value }
+        fun toInt(value: ControlEvent) = value.value
+    }
 }
 
-interface BasicReport {
+interface BasicDescriptor {
     val name: String
     val description: String
     val providerName: String
@@ -26,7 +29,7 @@ interface BasicReport {
 //    fun SendEvent(e: ControlEvent)
 }
 
-class KeyboardReport: BasicReport {
+class KeyboardDesc(): BasicDescriptor {
     override val name = "Groove Coaster Keyboard"
     override val description = "A Controller emulator for Groove Coaster"
     override val providerName = "Tryanks"
@@ -67,7 +70,7 @@ class KeyboardReport: BasicReport {
     ).map { it.toByte() }.toByteArray()
 }
 
-class JoystickReport: BasicReport {
+class JoystickDesc(): BasicDescriptor {
     override val name = "Groove Coaster Joystick"
     override val description = "A Controller emulator for Groove Coaster"
     override val providerName = "Tryanks"
