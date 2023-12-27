@@ -16,8 +16,12 @@ enum class ControlEvent(val value: Int) {
 
     companion object {
         fun fromInt(value: Int) = entries.first { it.value == value }
-        fun toInt(value: ControlEvent) = value.value
     }
+}
+
+enum class ControlType(val value: Int) {
+    Left(0),
+    Right(1);
 }
 
 interface BasicDescriptor {
@@ -26,10 +30,10 @@ interface BasicDescriptor {
     val providerName: String
     val descReport: ByteArray
     val subClass: Byte
-//    fun SendEvent(e: ControlEvent)
+    fun getReport(e: ControlEvent, t: ControlType): ByteArray
 }
 
-class KeyboardDesc(): BasicDescriptor {
+class KeyboardDesc: BasicDescriptor {
     override val name = "Groove Coaster Keyboard"
     override val description = "A Controller emulator for Groove Coaster"
     override val providerName = "Tryanks"
@@ -68,6 +72,78 @@ class KeyboardDesc(): BasicDescriptor {
         0x81, 0x00, //   Input (Data, Array): Keys
         0xC0, //       End Collection
     ).map { it.toByte() }.toByteArray()
+
+    private val reportHid = ByteArray(8)
+    override fun getReport(e: ControlEvent, t: ControlType): ByteArray {
+        if (t == ControlType.Left) {
+            when (e) {
+                ControlEvent.None -> {
+                    reportHid[2] = 0x00; reportHid[3] = 0x00
+                }
+                ControlEvent.Up -> {
+                    reportHid[2] = 0x1E; reportHid[3] = 0x00 // W
+                }
+                ControlEvent.Down -> {
+                    reportHid[2] = 0x1F; reportHid[3] = 0x00 // S
+                }
+                ControlEvent.Left -> {
+                    reportHid[2] = 0x20; reportHid[3] = 0x00 // A
+                }
+                ControlEvent.Right -> {
+                    reportHid[2] = 0x21; reportHid[3] = 0x00 // D
+                }
+                ControlEvent.UpRight -> {
+                    reportHid[2] = 0x1E; reportHid[3] = 0x21 // W + D
+                }
+                ControlEvent.DownRight -> {
+                    reportHid[2] = 0x1F; reportHid[3] = 0x21 // S + D
+                }
+                ControlEvent.UpLeft -> {
+                    reportHid[2] = 0x1E; reportHid[3] = 0x20 // W + A
+                }
+                ControlEvent.DownLeft -> {
+                    reportHid[2] = 0x1F; reportHid[3] = 0x20 // S + A
+                }
+                ControlEvent.Tap -> {
+                    reportHid[2] = 0x2C; reportHid[3] = 0x00 // Space
+                }
+            }
+        } else {
+            when (e) {
+                ControlEvent.None -> {
+                    reportHid[0] = 0x00; reportHid[4] = 0x00; reportHid[5] = 0x00
+                }
+                ControlEvent.Up -> {
+                    reportHid[4] = 0x52; reportHid[5] = 0x00 // Up Arrow
+                }
+                ControlEvent.Down -> {
+                    reportHid[4] = 0x51; reportHid[5] = 0x00 // Down Arrow
+                }
+                ControlEvent.Left -> {
+                    reportHid[4] = 0x50; reportHid[5] = 0x00 // Left Arrow
+                }
+                ControlEvent.Right -> {
+                    reportHid[4] = 0x4F; reportHid[5] = 0x00 // Right Arrow
+                }
+                ControlEvent.UpRight -> {
+                    reportHid[4] = 0x52; reportHid[5] = 0x4F // Up + Right
+                }
+                ControlEvent.DownRight -> {
+                    reportHid[4] = 0x51; reportHid[5] = 0x4F // Down + Right
+                }
+                ControlEvent.UpLeft -> {
+                    reportHid[4] = 0x52; reportHid[5] = 0x50 // Up + Left
+                }
+                ControlEvent.DownLeft -> {
+                    reportHid[4] = 0x51; reportHid[5] = 0x50 // Down + Left
+                }
+                ControlEvent.Tap -> {
+                    reportHid[0] = 0x01.shl(4).toByte(); reportHid[4] = 0x00; reportHid[5] = 0x00 // Right Ctrl
+                }
+            }
+        }
+        return reportHid
+    }
 }
 
 class JoystickDesc(): BasicDescriptor {
@@ -104,4 +180,9 @@ class JoystickDesc(): BasicDescriptor {
         0x25, 0x07, //   Logical Maximum (7)
         0x35, 0x00, //
     ).map { it.toByte() }.toByteArray()
+
+    override fun getReport(e: ControlEvent, t: ControlType): ByteArray {
+        // TODO
+        return ByteArray(8)
+    }
 }
