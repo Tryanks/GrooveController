@@ -16,32 +16,32 @@ import androidx.compose.ui.unit.dp
 import com.tryanks.groovecontroller.ui.theme.GrooveControllerTheme
 
 class MainActivity : ComponentActivity() {
+    var hid by remember { mutableStateOf<BasicDescriptor?>(null) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        hid = KeyboardDesc()
 
         setContent {
             GrooveCoaster()
         }
     }
-}
 
-@Composable
-fun GrooveCoaster() {
-    var hid by remember { mutableStateOf<BasicDescriptor?>(null) }
-
-    hid = KeyboardDesc()
-
-    GrooveControllerTheme(true) {
-        Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Control(Modifier.fillMaxWidth().weight(1f)) {
-                    val report = hid!!.getReport(it, if (Orientation == 0) ControlType.Left else ControlType.Right)
-                    Log.d("LEFT", "controlView: ${report.map { it.toInt() }.joinToString()}")
-                }
-                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxWidth())
-                Control(Modifier.fillMaxWidth().weight(1f)) {
-                    val report = hid!!.getReport(it, if (Orientation != 0) ControlType.Left else ControlType.Right)
-                    Log.d("RIGHT", "controlView: $report.map { it.toInt() }.joinToString()}")
+    @Composable
+    fun GrooveCoaster() {
+        GrooveControllerTheme(true) {
+            Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Control(Modifier.fillMaxWidth().weight(1f)) {
+                        val report = hid!!.getReport(it, if (Orientation == 0) ControlType.Left else ControlType.Right)
+                        Log.d("LEFT", "controlView: ${report.map { it.toInt() }.joinToString()}")
+                    }
+                    Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxWidth())
+                    Control(Modifier.fillMaxWidth().weight(1f)) {
+                        val report = hid!!.getReport(it, if (Orientation != 0) ControlType.Left else ControlType.Right)
+                        Log.d("RIGHT", "controlView: $report.map { it.toInt() }.joinToString()}")
+                    }
                 }
             }
         }
