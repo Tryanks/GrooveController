@@ -125,8 +125,8 @@ class MainActivity : ComponentActivity() {
         val currentHid = hid ?: return
 
         val qosSettings = BluetoothHidDeviceAppQosSettings(
-            BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT,
-            800, 9, 0, 11250, BluetoothHidDeviceAppQosSettings.MAX
+            BluetoothHidDeviceAppQosSettings.SERVICE_GUARANTEED,
+            800, 9, 800, 5000, BluetoothHidDeviceAppQosSettings.MAX
         )
         val sdpSettings = BluetoothHidDeviceAppSdpSettings(
             currentHid.name, currentHid.description, currentHid.providerName, currentHid.subClass, currentHid.descReport
@@ -359,7 +359,7 @@ class MainActivity : ComponentActivity() {
         val host = hostDevice
 
         val report = currentHid.getReport(event, type)
-        Log.d(tag, "sendReport: ${report.map { it.toInt() }.joinToString()}")
+        // Log.d(tag, "sendReport: ${report.map { it.toInt() }.joinToString()}")
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
             return

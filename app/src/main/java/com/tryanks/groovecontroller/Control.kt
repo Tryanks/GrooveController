@@ -12,23 +12,26 @@ import kotlin.math.atan2
 @Composable
 fun Control(modifier: Modifier = Modifier, action: (ControlEvent) -> Unit = {}) {
     var direction by remember { mutableStateOf(ControlEvent.None) }
+    var lastSentDirection by remember { mutableStateOf(ControlEvent.None) }
+    val state = remember { object {
+        var startX = 0f
+        var startY = 0f
+        var currentX = 0f
+        var currentY = 0f
+        var activePointerId: Int? = null
+        var lastDirection = ControlEvent.None
+    } }
     val slideStroke = SlideStroke * SlideStroke
     val debounceValue = DebounceValue * DebounceValue
-    var startX = 0f
-    var startY = 0f
-    var currentX = 0f
-    var currentY = 0f
-    var activePointerId: Int? = null
-    var lastDirection = ControlEvent.None
 
     fun down(it: MotionEvent, id: Int) {
         direction = ControlEvent.Tap
         val index = it.findPointerIndex(id)
-        startX = it.getX(index)
-        startY = it.getY(index)
-        currentX = startX
-        currentY = startY
-        lastDirection = ControlEvent.None
+        state.startX = it.getX(index)
+        state.startY = it.getY(index)
+        state.currentX = state.startX
+        state.currentY = state.startY
+        state.lastDirection = ControlEvent.None
     }
 
     Canvas(modifier.pointerInteropFilter {
@@ -36,58 +39,61 @@ fun Control(modifier: Modifier = Modifier, action: (ControlEvent) -> Unit = {}) 
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val actionIndex = it.actionIndex
                 val id = it.getPointerId(actionIndex)
-                if (activePointerId == null) {
-                    activePointerId = id
+                if (state.activePointerId == null) {
+                    state.activePointerId = id
                     down(it, id)
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val actionIndex = it.actionIndex
                 val id = it.getPointerId(actionIndex)
-                if (id == activePointerId) {
-                    activePointerId = null
+                if (id == state.activePointerId) {
+                    state.activePointerId = null
                     direction = ControlEvent.None
                 }
             }
             MotionEvent.ACTION_MOVE -> {
-                if (activePointerId == null) return@pointerInteropFilter false
-                val index = it.findPointerIndex(activePointerId!!)
+                if (state.activePointerId == null) return@pointerInteropFilter false
+                val index = it.findPointerIndex(state.activePointerId!!)
                 val x = it.getX(index)
                 val y = it.getY(index)
 
                 // 消抖
-                if (slideDistance(x, y, currentX, currentY) < debounceValue) return@pointerInteropFilter false
+                if (slideDistance(x, y, state.currentX, state.currentY) < debounceValue) return@pointerInteropFilter false
 
-                if (lastDirection == ControlEvent.None) {
+                if (state.lastDirection == ControlEvent.None) {
                     // 第一次滑动
-                    if (slideDistance(startX, startY, x, y) > slideStroke) {
-                        direction = calculateDirection(startX, startY, x, y)
+                    if (slideDistance(state.startX, state.startY, x, y) > slideStroke) {
+                        direction = calculateDirection(state.startX, state.startY, x, y)
                     }
-                    lastDirection = direction
-                    currentX = x
-                    currentY = y
+                    state.lastDirection = direction
+                    state.currentX = x
+                    state.currentY = y
                 } else {
                     // 后续滑动开始判断用户手指是否有变向的趋势
-                    val tempDirection = calculateDirection(currentX, currentY, x, y)
-                    if (tempDirection == lastDirection) {
+                    val tempDirection = calculateDirection(state.currentX, state.currentY, x, y)
+                    if (tempDirection == state.lastDirection) {
                         // 没有变向
-                        currentX = x
-                        currentY = y
+                        state.currentX = x
+                        state.currentY = y
                     } else {
                         // 存在变向的趋势
-                        if (slideDistance(currentX, currentY, x, y) > slideStroke) {
+                        if (slideDistance(state.currentX, state.currentY, x, y) > slideStroke) {
                             // 保持变向的趋势并且大于滑动行程
                             direction = tempDirection
-                            lastDirection = direction
+                            state.lastDirection = direction
                         }
                     }
                 }
             }
         }
-        action(ControlEvent.fromInt(direction.value))
+        if (direction != lastSentDirection) {
+            action(direction)
+            lastSentDirection = direction
+        }
         true
     }) {
-        drawArrow(size, 50f, ControlEvent.fromInt(direction.value))
+        drawArrow(size, 50f, direction)
     }
 }
 
