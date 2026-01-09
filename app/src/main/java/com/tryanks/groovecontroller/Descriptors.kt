@@ -74,35 +74,35 @@ class KeyboardDesc: BasicDescriptor {
     ).map { it.toByte() }.toByteArray()
 
     private val reportHid = ByteArray(8)
-    override fun getReport(e: ControlEvent, t: ControlType): ByteArray {
+    override fun getReport(e: ControlEvent, t: ControlType): ByteArray = synchronized(reportHid) {
         if (t == ControlType.Left) {
             when (e) {
                 ControlEvent.None -> {
                     reportHid[2] = 0x00; reportHid[3] = 0x00
                 }
                 ControlEvent.Up -> {
-                    reportHid[2] = 0x1E; reportHid[3] = 0x00 // W
+                    reportHid[2] = 0x1A; reportHid[3] = 0x00 // W
                 }
                 ControlEvent.Down -> {
-                    reportHid[2] = 0x1F; reportHid[3] = 0x00 // S
+                    reportHid[2] = 0x16; reportHid[3] = 0x00 // S
                 }
                 ControlEvent.Left -> {
-                    reportHid[2] = 0x20; reportHid[3] = 0x00 // A
+                    reportHid[2] = 0x04; reportHid[3] = 0x00 // A
                 }
                 ControlEvent.Right -> {
-                    reportHid[2] = 0x21; reportHid[3] = 0x00 // D
+                    reportHid[2] = 0x07; reportHid[3] = 0x00 // D
                 }
                 ControlEvent.UpRight -> {
-                    reportHid[2] = 0x1E; reportHid[3] = 0x21 // W + D
+                    reportHid[2] = 0x1A; reportHid[3] = 0x07 // W + D
                 }
                 ControlEvent.DownRight -> {
-                    reportHid[2] = 0x1F; reportHid[3] = 0x21 // S + D
+                    reportHid[2] = 0x16; reportHid[3] = 0x07 // S + D
                 }
                 ControlEvent.UpLeft -> {
-                    reportHid[2] = 0x1E; reportHid[3] = 0x20 // W + A
+                    reportHid[2] = 0x1A; reportHid[3] = 0x04 // W + A
                 }
                 ControlEvent.DownLeft -> {
-                    reportHid[2] = 0x1F; reportHid[3] = 0x20 // S + A
+                    reportHid[2] = 0x16; reportHid[3] = 0x04 // S + A
                 }
                 ControlEvent.Tap -> {
                     reportHid[2] = 0x2C; reportHid[3] = 0x00 // Space
@@ -114,35 +114,35 @@ class KeyboardDesc: BasicDescriptor {
                     reportHid[0] = 0x00; reportHid[4] = 0x00; reportHid[5] = 0x00
                 }
                 ControlEvent.Up -> {
-                    reportHid[4] = 0x52; reportHid[5] = 0x00 // Up Arrow
+                    reportHid[0] = 0x00; reportHid[4] = 0x52; reportHid[5] = 0x00 // Up Arrow
                 }
                 ControlEvent.Down -> {
-                    reportHid[4] = 0x51; reportHid[5] = 0x00 // Down Arrow
+                    reportHid[0] = 0x00; reportHid[4] = 0x51; reportHid[5] = 0x00 // Down Arrow
                 }
                 ControlEvent.Left -> {
-                    reportHid[4] = 0x50; reportHid[5] = 0x00 // Left Arrow
+                    reportHid[0] = 0x00; reportHid[4] = 0x50; reportHid[5] = 0x00 // Left Arrow
                 }
                 ControlEvent.Right -> {
-                    reportHid[4] = 0x4F; reportHid[5] = 0x00 // Right Arrow
+                    reportHid[0] = 0x00; reportHid[4] = 0x4F; reportHid[5] = 0x00 // Right Arrow
                 }
                 ControlEvent.UpRight -> {
-                    reportHid[4] = 0x52; reportHid[5] = 0x4F // Up + Right
+                    reportHid[0] = 0x00; reportHid[4] = 0x52; reportHid[5] = 0x4F // Up + Right
                 }
                 ControlEvent.DownRight -> {
-                    reportHid[4] = 0x51; reportHid[5] = 0x4F // Down + Right
+                    reportHid[0] = 0x00; reportHid[4] = 0x51; reportHid[5] = 0x4F // Down + Right
                 }
                 ControlEvent.UpLeft -> {
-                    reportHid[4] = 0x52; reportHid[5] = 0x50 // Up + Left
+                    reportHid[0] = 0x00; reportHid[4] = 0x52; reportHid[5] = 0x50 // Up + Left
                 }
                 ControlEvent.DownLeft -> {
-                    reportHid[4] = 0x51; reportHid[5] = 0x50 // Down + Left
+                    reportHid[0] = 0x00; reportHid[4] = 0x51; reportHid[5] = 0x50 // Down + Left
                 }
                 ControlEvent.Tap -> {
-                    reportHid[0] = 0x01.shl(4).toByte(); reportHid[4] = 0x00; reportHid[5] = 0x00 // Right Ctrl
+                    reportHid[0] = 0x10; reportHid[4] = 0x00; reportHid[5] = 0x00 // Right Ctrl
                 }
             }
         }
-        return reportHid
+        return reportHid.copyOf()
     }
 }
 

@@ -6,122 +6,347 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothHidDevice
 import android.bluetooth.BluetoothHidDeviceAppQosSettings
 import android.bluetooth.BluetoothHidDeviceAppSdpSettings
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Surface
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import com.tryanks.groovecontroller.ui.theme.GrooveControllerTheme
+import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
 
+enum class AppScreen {
+    Setup, Controller
+}
+
 class MainActivity : ComponentActivity() {
-    var hid by remember { mutableStateOf<BasicDescriptor?>(null) }
-    var hidDevice: BluetoothHidDevice? = null
-    var hostDevice: BluetoothDevice? = null
-    var ctx: MainActivity? = null
+    private var hid: BasicDescriptor? = KeyboardDesc()
+    private var hidDevice by mutableStateOf<BluetoothHidDevice?>(null)
+    private var hostDevice by mutableStateOf<BluetoothDevice?>(null)
+    private var isRegistered by mutableStateOf(false)
+    private var currentScreen by mutableStateOf(AppScreen.Setup)
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.all { it.value }) {
+            initBluetooth()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        hid = KeyboardDesc()
-
         setContent {
-            GrooveCoaster()
+            GrooveControllerTheme(true) {
+                Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
+                    if (currentScreen == AppScreen.Setup) {
+                        SetupScreen()
+                    } else {
+                        GrooveCoaster()
+                    }
+                }
+            }
         }
 
-        // 在这里暂时实现蓝牙 HID 并后续移动
-        ctx = this
-        BluetoothAdapter.getDefaultAdapter().getProfileProxy(this, object: BluetoothProfile.ServiceListener {
+        checkAndRequestPermissions()
+    }
+
+    private fun checkAndRequestPermissions() {
+        val neededPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_ADVERTISE
+            )
+        } else {
+            arrayOf(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        }
+
+        if (neededPermissions.all {
+                ActivityCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+            }) {
+            initBluetooth()
+        } else {
+            requestPermissionLauncher.launch(neededPermissions)
+        }
+    }
+
+    private fun initBluetooth() {
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val adapter = bluetoothManager.adapter
+
+        if (adapter == null) {
+            Log.e("HID", "Bluetooth adapter not available")
+            return
+        }
+
+        adapter.getProfileProxy(this, object : BluetoothProfile.ServiceListener {
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile?) {
                 if (profile == BluetoothProfile.HID_DEVICE) {
-                    hidDevice = proxy!! as BluetoothHidDevice
-                    val qosSettings = BluetoothHidDeviceAppQosSettings(BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT,
-                        800,9,0,11250,BluetoothHidDeviceAppQosSettings.MAX)
-                    val sdpSettings = BluetoothHidDeviceAppSdpSettings(
-                        hid!!.name, hid!!.description, hid!!.providerName, hid!!.subClass, hid!!.descReport
-                    )
-
-                    if (ActivityCompat.checkSelfPermission(ctx!!, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                        return
-                    }
-
-                    hidDevice!!.registerApp(sdpSettings, null, qosSettings, Executors.newCachedThreadPool(), object:
-                        BluetoothHidDevice.Callback() {
-                        override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
-                            if (registered) {
-                                if (ActivityCompat.checkSelfPermission(ctx!!, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                                    return
-                                }
-                                if (pluggedDevice != null && hidDevice!!.getConnectionState(pluggedDevice) != BluetoothProfile.STATE_CONNECTED) {
-                                    hidDevice!!.connect(pluggedDevice)
-                                }
-                            } else {
-                                Log.d("HID", "onAppStatusChanged: HID Device is unregistered")
-                            }
-                        }
-
-                        override fun onConnectionStateChanged(device: BluetoothDevice?, state: Int) {
-                            if (state == BluetoothProfile.STATE_CONNECTED) {
-                                hostDevice = device
-                            } else if (state == BluetoothProfile.STATE_DISCONNECTED) {
-                                hostDevice = null
-                            }
-                        }
-                    })
-
-                    startActivityForResult(Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE), 1)
+                    hidDevice = proxy as BluetoothHidDevice
                 }
             }
 
             override fun onServiceDisconnected(profile: Int) {
-                TODO("Not yet implemented")
+                if (profile == BluetoothProfile.HID_DEVICE) {
+                    hidDevice = null
+                    isRegistered = false
+                }
             }
         }, BluetoothProfile.HID_DEVICE)
     }
 
-    @Composable
-    fun GrooveCoaster() {
-        GrooveControllerTheme(true) {
-            Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Control(Modifier.fillMaxWidth().weight(1f)) {
-                        val report = hid!!.getReport(it, if (Orientation == 0) ControlType.Left else ControlType.Right)
-                        Log.d("LEFT", "controlView: ${report.map { it.toInt() }.joinToString()}")
-                        if (ActivityCompat.checkSelfPermission(ctx!!, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                            return@Control
-                        }
-                        hidDevice?.sendReport(hostDevice, report.size, report)
+    private fun registerApp() {
+        val device = hidDevice ?: return
+        val currentHid = hid ?: return
+
+        val qosSettings = BluetoothHidDeviceAppQosSettings(
+            BluetoothHidDeviceAppQosSettings.SERVICE_BEST_EFFORT,
+            800, 9, 0, 11250, BluetoothHidDeviceAppQosSettings.MAX
+        )
+        val sdpSettings = BluetoothHidDeviceAppSdpSettings(
+            currentHid.name, currentHid.description, currentHid.providerName, currentHid.subClass, currentHid.descReport
+        )
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
+        device.registerApp(sdpSettings, null, qosSettings, Executors.newCachedThreadPool(), object :
+            BluetoothHidDevice.Callback() {
+            override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
+                Log.d("HID", "onAppStatusChanged: registered=$registered")
+                isRegistered = registered
+                if (registered) {
+                    if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                        return
                     }
-                    Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxWidth())
-                    Control(Modifier.fillMaxWidth().weight(1f)) {
-                        val report = hid!!.getReport(it, if (Orientation != 0) ControlType.Left else ControlType.Right)
-                        Log.d("RIGHT", "controlView: ${report.map { it.toInt() }.joinToString()}")
-                        if (ActivityCompat.checkSelfPermission(ctx!!, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                            return@Control
-                        }
-                        hidDevice?.sendReport(hostDevice, report.size, report)
+                    if (pluggedDevice != null && device.getConnectionState(pluggedDevice) != BluetoothProfile.STATE_CONNECTED) {
+                        device.connect(pluggedDevice)
                     }
                 }
             }
+
+            override fun onConnectionStateChanged(device: BluetoothDevice?, state: Int) {
+                Log.d("HID", "onConnectionStateChanged: device=$device state=$state")
+                if (state == BluetoothProfile.STATE_CONNECTED) {
+                    hostDevice = device
+                } else if (state == BluetoothProfile.STATE_DISCONNECTED) {
+                    hostDevice = null
+                }
+            }
+        })
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+            hidDevice?.unregisterApp()
+        }
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothManager.adapter?.closeProfileProxy(BluetoothProfile.HID_DEVICE, hidDevice)
+    }
+
+    @Composable
+    fun SetupScreen() {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Groove Controller Setup", color = Color.White, fontSize = 24.sp)
+            Spacer(modifier = Modifier.height(32.dp))
+
+            StatusRow("HID Service", if (hidDevice != null) "Ready" else "Not Ready", if (hidDevice != null) Color.Green else Color.Red)
+            StatusRow("Registration", if (isRegistered) "Registered" else "Not Registered", if (isRegistered) Color.Green else Color.Red)
+            StatusRow("Host Connection", if (hostDevice != null) hostDevice?.name ?: "Connected" else "Disconnected", if (hostDevice != null) Color.Green else Color.Red)
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = {
+                    registerApp()
+                    if (ActivityCompat.checkSelfPermission(this@MainActivity, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED) {
+                        startActivityForResult(Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE), 1)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Register HID Keyboard & Make Discoverable")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { moveTaskToBack(true) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+            ) {
+                Text("Minimize App")
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { currentScreen = AppScreen.Controller },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isRegistered,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
+            ) {
+                Text("Enter Controller Mode")
+            }
+        }
+    }
+
+    @Composable
+    fun StatusRow(label: String, value: String, valueColor: Color) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, color = Color.LightGray)
+            Text(value, color = valueColor)
+        }
+    }
+
+    @Composable
+    fun GrooveCoaster() {
+        var isTopRightPressed by remember { mutableStateOf(false) }
+        var isBottomRightPressed by remember { mutableStateOf(false) }
+        var exitProgress by remember { mutableStateOf(0f) }
+
+        LaunchedEffect(isTopRightPressed, isBottomRightPressed) {
+            if (isTopRightPressed && isBottomRightPressed) {
+                val startTime = System.currentTimeMillis()
+                val duration = 1500L
+                while (true) {
+                    val elapsed = System.currentTimeMillis() - startTime
+                    exitProgress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
+                    if (elapsed >= duration) break
+                    delay(16)
+                }
+                currentScreen = AppScreen.Setup
+            } else {
+                exitProgress = 0f
+            }
+        }
+
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val w = size.width
+                        val h = size.height
+                        val area = 100.dp.toPx()
+
+                        isTopRightPressed = event.changes.any { it.pressed && it.position.x > w - area && it.position.y < area }
+                        isBottomRightPressed = event.changes.any { it.pressed && it.position.x > w - area && it.position.y > h - area }
+                    }
+                }
+            }
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Control(Modifier.fillMaxWidth().weight(1f)) { event ->
+                    sendReport(event, if (Orientation == 0) ControlType.Left else ControlType.Right, "LEFT")
+                }
+                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxWidth())
+                Control(Modifier.fillMaxWidth().weight(1f)) { event ->
+                    sendReport(event, if (Orientation != 0) ControlType.Left else ControlType.Right, "RIGHT")
+                }
+            }
+
+            // 退出提示和进度
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isTopRightPressed && isBottomRightPressed) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            progress = exitProgress,
+                            color = Color.White,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("即将退出", color = Color.White, fontSize = 20.sp)
+                    }
+                } else if (isTopRightPressed || isBottomRightPressed) {
+                    Text(
+                        "同时按住两个退出按钮才能退出",
+                        color = Color.White,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+
+            // 视觉提示：右上角
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .background(
+                        color = if (isTopRightPressed) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    )
+            )
+
+            // 视觉提示：右下角
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .background(
+                        color = if (isBottomRightPressed) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                        shape = CircleShape
+                    )
+            )
+        }
+    }
+
+    private fun sendReport(event: ControlEvent, type: ControlType, tag: String) {
+        val currentHid = hid ?: return
+        val device = hidDevice ?: return
+        val host = hostDevice
+
+        val report = currentHid.getReport(event, type)
+        Log.d(tag, "sendReport: ${report.map { it.toInt() }.joinToString()}")
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+        // host 可以为 null，表示向所有已连接设备发送，但最好有明确的 host
+        val success = device.sendReport(host, 0, report)
+        if (!success) {
+            Log.e("HID", "Failed to send report")
         }
     }
 }
