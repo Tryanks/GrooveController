@@ -190,7 +190,7 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("模拟模式", color = Color.LightGray)
+                Text(stringResource(R.string.simulation_mode), color = Color.LightGray)
                 Row {
                     TextButton(
                         onClick = { hid = KeyboardDesc() },
@@ -199,7 +199,7 @@ class MainActivity : ComponentActivity() {
                             contentColor = if (hid is KeyboardDesc) Color.Cyan else Color.Gray
                         )
                     ) {
-                        Text("键盘")
+                        Text(stringResource(R.string.keyboard))
                     }
                     TextButton(
                         onClick = { hid = GamepadDesc() },
@@ -208,7 +208,7 @@ class MainActivity : ComponentActivity() {
                             contentColor = if (hid is GamepadDesc) Color.Cyan else Color.Gray
                         )
                     ) {
-                        Text("手柄")
+                        Text(stringResource(R.string.gamepad))
                     }
                 }
             }
@@ -227,18 +227,9 @@ class MainActivity : ComponentActivity() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(if (isRegistered) "已注册" else "注册 HID 并开启蓝牙可见")
+                Text(if (isRegistered) stringResource(R.string.registered) else stringResource(R.string.register_btn_default))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = { moveTaskToBack(true) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-            ) {
-                Text(stringResource(R.string.minimize_btn))
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
