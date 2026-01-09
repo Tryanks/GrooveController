@@ -40,7 +40,7 @@ enum class AppScreen {
 }
 
 class MainActivity : ComponentActivity() {
-    private var hid: BasicDescriptor? = KeyboardDesc()
+    private var hid by mutableStateOf<BasicDescriptor?>(KeyboardDesc())
     private var hidDevice by mutableStateOf<BluetoothHidDevice?>(null)
     private var hostDevice by mutableStateOf<BluetoothDevice?>(null)
     private var isRegistered by mutableStateOf(false)
@@ -184,6 +184,35 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(32.dp))
 
             StatusRow(stringResource(R.string.hid_service), if (hidDevice != null) stringResource(R.string.ready) else stringResource(R.string.not_ready), if (hidDevice != null) Color.Green else Color.Red)
+            
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("模拟模式", color = Color.LightGray)
+                Row {
+                    TextButton(
+                        onClick = { hid = KeyboardDesc() },
+                        enabled = !isRegistered,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = if (hid is KeyboardDesc) Color.Cyan else Color.Gray
+                        )
+                    ) {
+                        Text("键盘")
+                    }
+                    TextButton(
+                        onClick = { hid = GamepadDesc() },
+                        enabled = !isRegistered,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = if (hid is GamepadDesc) Color.Cyan else Color.Gray
+                        )
+                    ) {
+                        Text("手柄")
+                    }
+                }
+            }
+
             StatusRow(stringResource(R.string.registration), if (isRegistered) stringResource(R.string.registered) else stringResource(R.string.not_registered), if (isRegistered) Color.Green else Color.Red)
             StatusRow(stringResource(R.string.host_connection), if (hostDevice != null) hostDevice?.name ?: stringResource(R.string.connected) else stringResource(R.string.disconnected), if (hostDevice != null) Color.Green else Color.Red)
 
@@ -198,7 +227,7 @@ class MainActivity : ComponentActivity() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.register_btn))
+                Text(if (isRegistered) "已注册" else "注册 HID 并开启蓝牙可见")
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -345,7 +374,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         // host 可以为 null，表示向所有已连接设备发送，但最好有明确的 host
-        val success = device.sendReport(host, 0, report)
+        val success = device.sendReport(host, currentHid.reportId.toInt(), report)
         if (!success) {
             Log.e("HID", "Failed to send report")
         }

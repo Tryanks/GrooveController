@@ -30,6 +30,7 @@ interface BasicDescriptor {
     val providerName: String
     val descReport: ByteArray
     val subClass: Byte
+    val reportId: Byte
     fun getReport(e: ControlEvent, t: ControlType): ByteArray
 }
 
@@ -38,6 +39,7 @@ class KeyboardDesc: BasicDescriptor {
     override val description = "Groove Coaster 控制器模拟器"
     override val providerName = "Tryanks"
     override val subClass: Byte = BluetoothHidDevice.SUBCLASS1_KEYBOARD
+    override val reportId: Byte = 0
     override val descReport: ByteArray = intArrayOf(
         0x05, 0x01, // Usage Page (Generic Desktop)
         0x09, 0x06, // Usage (Keyboard)
@@ -146,43 +148,143 @@ class KeyboardDesc: BasicDescriptor {
     }
 }
 
-class JoystickDesc(): BasicDescriptor {
-    override val name = "Groove Coaster 摇杆"
-    override val description = "Groove Coaster 控制器模拟器"
+class GamepadDesc : BasicDescriptor {
+    override val name = "Groove Coaster 手柄"
+    override val description = "Groove Coaster 控制器模拟器 (Gamepad)"
     override val providerName = "Tryanks"
-    override val subClass: Byte = BluetoothHidDevice.SUBCLASS2_JOYSTICK
+    override val subClass: Byte = 0x04 // Gamepad/Joystick
+    override val reportId: Byte = 1
     override val descReport: ByteArray = intArrayOf(
-        0x05, 0x01, // Usage Page (Generic Desktop)
-        0x09, 0x04, // Usage (Joystick)
-        0xA1, 0x01, // Collection (Application)
-        0x85, 0x01, //   Report ID (1)
-        0x05, 0x01, //   Usage Page (Generic Desktop)
-        0x09, 0x30, //   Usage (X)
-        0x09, 0x31, //   Usage (Y)
-        0x09, 0x32, //   Usage (Z)
-        0x09, 0x35, //   Usage (Rz)
-        0x15, 0x00, //   Logical Minimum (0)
-        0x26, 0xFF, 0x00, //   Logical Maximum (255)
-        0x75, 0x08, //   Report Size (8)
-        0x95, 0x04, //   Report Count (4)
-        0x81, 0x02, //   Input (Data, Variable, Absolute)
-        0x05, 0x09, //   Usage Page (Button)
-        0x19, 0x01, //   Usage Minimum (1)
-        0x29, 0x0E, //   Usage Maximum (14)
-        0x15, 0x00, //   Logical Minimum (0)
-        0x25, 0x01, //   Logical Maximum (1)
-        0x75, 0x01, //   Report Size (1)
-        0x95, 0x0E, //   Report Count (14)
-        0x81, 0x02, //   Input (Data, Variable, Absolute)
-        0x05, 0x01, //   Usage Page (Generic Desktop)
-        0x09, 0x39, //   Usage (Hat switch)
-        0x15, 0x00, //   Logical Minimum (0)
-        0x25, 0x07, //   Logical Maximum (7)
-        0x35, 0x00, //
+        0x05, 0x01, 0x09, 0x05, 0xA1, 0x01, 0x85, 0x01, 0x09, 0x01, 0xA1, 0x00, 0x09, 0x30, 0x09, 0x31,
+        0x15, 0x00, 0x27, 0xFF, 0xFF, 0x00, 0x00, 0x95, 0x02, 0x75, 0x10, 0x81, 0x02, 0xC0, 0x09, 0x01,
+        0xA1, 0x00, 0x09, 0x32, 0x09, 0x35, 0x15, 0x00, 0x27, 0xFF, 0xFF, 0x00, 0x00, 0x95, 0x02, 0x75,
+        0x10, 0x81, 0x02, 0xC0, 0x05, 0x02, 0x09, 0xC5, 0x15, 0x00, 0x26, 0xFF, 0x03, 0x95, 0x01, 0x75,
+        0x0A, 0x81, 0x02, 0x15, 0x00, 0x25, 0x00, 0x75, 0x06, 0x95, 0x01, 0x81, 0x03, 0x05, 0x02, 0x09,
+        0xC4, 0x15, 0x00, 0x26, 0xFF, 0x03, 0x95, 0x01, 0x75, 0x0A, 0x81, 0x02, 0x15, 0x00, 0x25, 0x00,
+        0x75, 0x06, 0x95, 0x01, 0x81, 0x03, 0x05, 0x01, 0x09, 0x39, 0x15, 0x01, 0x25, 0x08, 0x35, 0x00,
+        0x46, 0x3B, 0x01, 0x66, 0x14, 0x00, 0x75, 0x04, 0x95, 0x01, 0x81, 0x42, 0x75, 0x04, 0x95, 0x01,
+        0x15, 0x00, 0x25, 0x00, 0x35, 0x00, 0x45, 0x00, 0x65, 0x00, 0x81, 0x03, 0x05, 0x09, 0x19, 0x01,
+        0x29, 0x0F, 0x15, 0x00, 0x25, 0x01, 0x75, 0x01, 0x95, 0x0F, 0x81, 0x02, 0x15, 0x00, 0x25, 0x00,
+        0x75, 0x01, 0x95, 0x01, 0x81, 0x03, 0x05, 0x0C, 0x0A, 0x24, 0x02, 0x15, 0x00, 0x25, 0x01, 0x95,
+        0x01, 0x75, 0x01, 0x81, 0x02, 0x15, 0x00, 0x25, 0x00, 0x75, 0x07, 0x95, 0x01, 0x81, 0x03, 0x05,
+        0x0C, 0x09, 0x01, 0x85, 0x02, 0xA1, 0x01, 0x05, 0x0C, 0x0A, 0x23, 0x02, 0x15, 0x00, 0x25, 0x01,
+        0x95, 0x01, 0x75, 0x01, 0x81, 0x02, 0x15, 0x00, 0x25, 0x00, 0x75, 0x07, 0x95, 0x01, 0x81, 0x03,
+        0xC0, 0x05, 0x0F, 0x09, 0x21, 0x85, 0x03, 0xA1, 0x02, 0x09, 0x97, 0x15, 0x00, 0x25, 0x01, 0x75,
+        0x04, 0x95, 0x01, 0x91, 0x02, 0x15, 0x00, 0x25, 0x00, 0x75, 0x04, 0x95, 0x01, 0x91, 0x03, 0x09,
+        0x70, 0x15, 0x00, 0x25, 0x64, 0x75, 0x08, 0x95, 0x04, 0x91, 0x02, 0x09, 0x50, 0x66, 0x01, 0x10,
+        0x55, 0x0E, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x01, 0x91, 0x02, 0x09, 0xA7, 0x15,
+        0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x01, 0x91, 0x02, 0x65, 0x00, 0x55, 0x00, 0x09, 0x7C,
+        0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x01, 0x91, 0x02, 0xC0, 0x05, 0x06, 0x09, 0x20,
+        0x85, 0x04, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x01, 0x81, 0x02, 0xC0
     ).map { it.toByte() }.toByteArray()
 
-    override fun getReport(e: ControlEvent, t: ControlType): ByteArray {
-        // TODO
-        return ByteArray(8)
+    private val reportHid = ByteArray(16).apply {
+        // Initial values for X, Y, Z, Rz (center)
+        val center = 32767
+        this[0] = (center and 0xFF).toByte()
+        this[1] = ((center shr 8) and 0xFF).toByte()
+        this[2] = (center and 0xFF).toByte()
+        this[3] = ((center shr 8) and 0xFF).toByte()
+        this[4] = (center and 0xFF).toByte()
+        this[5] = ((center shr 8) and 0xFF).toByte()
+        this[6] = (center and 0xFF).toByte()
+        this[7] = ((center shr 8) and 0xFF).toByte()
+    }
+
+    override fun getReport(e: ControlEvent, t: ControlType): ByteArray = synchronized(reportHid) {
+        val center = 32767
+        val min = 0
+        val max = 65535
+
+        if (t == ControlType.Left) {
+            var x = center
+            var y = center
+            var buttonA = false
+            when (e) {
+                ControlEvent.None -> {}
+                ControlEvent.Tap -> {
+                    buttonA = true
+                }
+                ControlEvent.Up -> {
+                    y = min
+                }
+                ControlEvent.Down -> {
+                    y = max
+                }
+                ControlEvent.Left -> {
+                    x = min
+                }
+                ControlEvent.Right -> {
+                    x = max
+                }
+                ControlEvent.UpRight -> {
+                    x = max; y = min
+                }
+                ControlEvent.DownRight -> {
+                    x = max; y = max
+                }
+                ControlEvent.UpLeft -> {
+                    x = min; y = min
+                }
+                ControlEvent.DownLeft -> {
+                    x = min; y = max
+                }
+            }
+            reportHid[0] = (x and 0xFF).toByte()
+            reportHid[1] = ((x shr 8) and 0xFF).toByte()
+            reportHid[2] = (y and 0xFF).toByte()
+            reportHid[3] = ((y shr 8) and 0xFF).toByte()
+
+            if (buttonA) {
+                reportHid[13] = (reportHid[13].toInt() or 0x01).toByte()
+            } else {
+                reportHid[13] = (reportHid[13].toInt() and 0xFE).toByte()
+            }
+        } else {
+            var z = center
+            var rz = center
+            var buttonB = false
+            when (e) {
+                ControlEvent.None -> {}
+                ControlEvent.Tap -> {
+                    buttonB = true
+                }
+                ControlEvent.Up -> {
+                    rz = min
+                }
+                ControlEvent.Down -> {
+                    rz = max
+                }
+                ControlEvent.Left -> {
+                    z = min
+                }
+                ControlEvent.Right -> {
+                    z = max
+                }
+                ControlEvent.UpRight -> {
+                    z = max; rz = min
+                }
+                ControlEvent.DownRight -> {
+                    z = max; rz = max
+                }
+                ControlEvent.UpLeft -> {
+                    z = min; rz = min
+                }
+                ControlEvent.DownLeft -> {
+                    z = min; rz = max
+                }
+            }
+            reportHid[4] = (z and 0xFF).toByte()
+            reportHid[5] = ((z shr 8) and 0xFF).toByte()
+            reportHid[6] = (rz and 0xFF).toByte()
+            reportHid[7] = ((rz shr 8) and 0xFF).toByte()
+
+            if (buttonB) {
+                reportHid[13] = (reportHid[13].toInt() or 0x02).toByte()
+            } else {
+                reportHid[13] = (reportHid[13].toInt() and 0xFD).toByte()
+            }
+        }
+        return reportHid.copyOf()
     }
 }
