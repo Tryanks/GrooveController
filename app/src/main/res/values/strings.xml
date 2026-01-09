@@ -13,6 +13,12 @@
     <string name="host_connection">Host Connection</string>
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>
+    <string name="bluetooth_mac">Bluetooth MAC</string>
+    <string name="mac_hidden_hint">Android hides real MAC, please check in system settings if needed.</string>
+    <string name="set_bluetooth_mac">Set Bluetooth MAC</string>
+    <string name="mac_address_invalid">Invalid MAC Address format</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
     <string name="register_btn_default">Register HID &amp; Make Discoverable</string>
     <string name="enter_controller_btn">Enter Controller Mode</string>
     <string name="exiting">Exiting...</string>

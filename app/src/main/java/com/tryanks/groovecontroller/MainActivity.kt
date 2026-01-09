@@ -14,10 +14,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -31,6 +33,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
+import com.tryanks.groovecontroller.joycon.ControllerType
+import com.tryanks.groovecontroller.joycon.JoyConController
+import com.tryanks.groovecontroller.joycon.JoyConDesc
 import com.tryanks.groovecontroller.ui.theme.GrooveControllerTheme
 import kotlinx.coroutines.delay
 import java.util.concurrent.Executors
@@ -43,8 +48,11 @@ class MainActivity : ComponentActivity() {
     private var hid by mutableStateOf<BasicDescriptor?>(KeyboardDesc())
     private var hidDevice by mutableStateOf<BluetoothHidDevice?>(null)
     private var hostDevice by mutableStateOf<BluetoothDevice?>(null)
+    private var joyConController: JoyConController? = null
     private var isRegistered by mutableStateOf(false)
     private var currentScreen by mutableStateOf(AppScreen.Setup)
+    private var bluetoothAddress by mutableStateOf("00:11:22:33:44:55")
+    private var showMacDialog by mutableStateOf(false)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -56,6 +64,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val prefs = getSharedPreferences("groove_prefs", Context.MODE_PRIVATE)
+        val savedMac = prefs.getString("bluetooth_mac", null)
+        if (savedMac != null) {
+            bluetoothAddress = savedMac
+        } else {
+            val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            val adapter = bluetoothManager.adapter
+            if (adapter != null && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                adapter.address?.let {
+                    if (it != "02:00:00:00:00:00") {
+                        bluetoothAddress = it
+                    }
+                }
+            }
+        }
 
         setContent {
             GrooveControllerTheme(true) {
@@ -136,6 +160,12 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        if (currentHid is JoyConDesc) {
+            val adapter = (getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager).adapter
+            adapter.name = currentHid.type.btName
+            joyConController = JoyConController(this, currentHid.type, device, bluetoothAddress)
+        }
+
         device.registerApp(sdpSettings, null, qosSettings, Executors.newCachedThreadPool(), object :
             BluetoothHidDevice.Callback() {
             override fun onAppStatusChanged(pluggedDevice: BluetoothDevice?, registered: Boolean) {
@@ -158,6 +188,10 @@ class MainActivity : ComponentActivity() {
                 } else if (state == BluetoothProfile.STATE_DISCONNECTED) {
                     hostDevice = null
                 }
+            }
+
+            override fun onInterruptData(device: BluetoothDevice, reportId: Byte, data: ByteArray) {
+                joyConController?.handleOutputReport(device, reportId, data)
             }
         })
     }
@@ -185,30 +219,79 @@ class MainActivity : ComponentActivity() {
 
             StatusRow(stringResource(R.string.hid_service), if (hidDevice != null) stringResource(R.string.ready) else stringResource(R.string.not_ready), if (hidDevice != null) Color.Green else Color.Red)
             
+            if (hid is JoyConDesc) {
+                StatusRow(
+                    stringResource(R.string.bluetooth_mac),
+                    bluetoothAddress,
+                    if (bluetoothAddress == "02:00:00:00:00:00") Color.Yellow else Color.White,
+                    modifier = Modifier.clickable { if (!isRegistered) showMacDialog = true }
+                )
+                if (bluetoothAddress == "02:00:00:00:00:00") {
+                    Text(
+                        stringResource(R.string.mac_hidden_hint),
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 8.dp).fillMaxWidth(),
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(stringResource(R.string.simulation_mode), color = Color.LightGray)
-                Row {
-                    TextButton(
-                        onClick = { hid = KeyboardDesc() },
-                        enabled = !isRegistered,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = if (hid is KeyboardDesc) Color.Cyan else Color.Gray
-                        )
-                    ) {
-                        Text(stringResource(R.string.keyboard))
+                Column(horizontalAlignment = Alignment.End) {
+                    Row {
+                        TextButton(
+                            onClick = { hid = KeyboardDesc() },
+                            enabled = !isRegistered,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = if (hid is KeyboardDesc) Color.Cyan else Color.Gray
+                            )
+                        ) {
+                            Text(stringResource(R.string.keyboard))
+                        }
+                        TextButton(
+                            onClick = { hid = GamepadDesc() },
+                            enabled = !isRegistered,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = if (hid is GamepadDesc) Color.Cyan else Color.Gray
+                            )
+                        ) {
+                            Text(stringResource(R.string.gamepad))
+                        }
                     }
-                    TextButton(
-                        onClick = { hid = GamepadDesc() },
-                        enabled = !isRegistered,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = if (hid is GamepadDesc) Color.Cyan else Color.Gray
-                        )
-                    ) {
-                        Text(stringResource(R.string.gamepad))
+                    Row {
+                        TextButton(
+                            onClick = { hid = JoyConDesc(ControllerType.LEFT_JOYCON) },
+                            enabled = !isRegistered,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = if (hid is JoyConDesc && (hid as JoyConDesc).type == ControllerType.LEFT_JOYCON) Color.Cyan else Color.Gray
+                            )
+                        ) {
+                            Text("L")
+                        }
+                        TextButton(
+                            onClick = { hid = JoyConDesc(ControllerType.RIGHT_JOYCON) },
+                            enabled = !isRegistered,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = if (hid is JoyConDesc && (hid as JoyConDesc).type == ControllerType.RIGHT_JOYCON) Color.Cyan else Color.Gray
+                            )
+                        ) {
+                            Text("R")
+                        }
+                        TextButton(
+                            onClick = { hid = JoyConDesc(ControllerType.PRO_CONTROLLER) },
+                            enabled = !isRegistered,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = if (hid is JoyConDesc && (hid as JoyConDesc).type == ControllerType.PRO_CONTROLLER) Color.Cyan else Color.Gray
+                            )
+                        ) {
+                            Text("Pro")
+                        }
                     }
                 }
             }
@@ -242,12 +325,52 @@ class MainActivity : ComponentActivity() {
                 Text(stringResource(R.string.enter_controller_btn))
             }
         }
+
+        if (showMacDialog) {
+            var text by remember { mutableStateOf(bluetoothAddress) }
+            AlertDialog(
+                onDismissRequest = { showMacDialog = false },
+                title = { Text(stringResource(R.string.set_bluetooth_mac)) },
+                text = {
+                    TextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        placeholder = { Text("00:11:22:33:44:55") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (isValidMac(text)) {
+                            bluetoothAddress = text
+                            getSharedPreferences("groove_prefs", Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("bluetooth_mac", text)
+                                .apply()
+                            showMacDialog = false
+                        } else {
+                            Toast.makeText(this@MainActivity, R.string.mac_address_invalid, Toast.LENGTH_SHORT).show()
+                        }
+                    }) {
+                        Text(stringResource(R.string.save))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showMacDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+    }
+
+    private fun isValidMac(mac: String): Boolean {
+        return Regex("^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})\$").matches(mac)
     }
 
     @Composable
-    fun StatusRow(label: String, value: String, valueColor: Color) {
+    fun StatusRow(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(label, color = Color.LightGray)
@@ -357,6 +480,13 @@ class MainActivity : ComponentActivity() {
         val currentHid = hid ?: return
         val device = hidDevice ?: return
         val host = hostDevice
+
+        if (currentHid is JoyConDesc) {
+            if (host != null) {
+                joyConController?.sendGrooveReport(host, event, type)
+            }
+            return
+        }
 
         val report = currentHid.getReport(event, type)
         // Log.d(tag, "sendReport: ${report.map { it.toInt() }.joinToString()}")

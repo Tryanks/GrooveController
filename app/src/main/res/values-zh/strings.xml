@@ -13,6 +13,12 @@
     <string name="host_connection">主机连接</string>
     <string name="connected">已连接</string>
     <string name="disconnected">未连接</string>
+    <string name="bluetooth_mac">蓝牙 MAC 地址</string>
+    <string name="mac_hidden_hint">Android 系统会隐藏真实 MAC 地址，如需查看请前往系统设置。</string>
+    <string name="set_bluetooth_mac">设置蓝牙 MAC 地址</string>
+    <string name="mac_address_invalid">MAC 地址格式错误</string>
+    <string name="cancel">取消</string>
+    <string name="save">保存</string>
     <string name="register_btn_default">注册 HID 并开启蓝牙可见</string>
     <string name="enter_controller_btn">进入控制器模式</string>
     <string name="exiting">即将退出</string>
