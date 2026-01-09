@@ -15,6 +15,7 @@
     <string name="disconnected">未连接</string>
     <string name="register_btn_default">注册 HID 并开启蓝牙可见</string>
     <string name="enter_controller_btn">进入控制器模式</string>
+    <string name="vibration">震动</string>
     <string name="exiting">即将退出</string>
     <string name="exit_hint">同时按住两个退出按钮才能退出</string>
 </resources>

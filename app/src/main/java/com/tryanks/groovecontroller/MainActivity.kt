@@ -11,7 +11,6 @@ import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -73,18 +72,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndRequestPermissions() {
-        val neededPermissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            arrayOf(
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_ADVERTISE
-            )
-        } else {
-            arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            )
-        }
+        val neededPermissions = arrayOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_ADVERTISE
+        )
 
         if (neededPermissions.all {
                 ActivityCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
@@ -184,6 +175,22 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(32.dp))
 
             StatusRow(stringResource(R.string.hid_service), if (hidDevice != null) stringResource(R.string.ready) else stringResource(R.string.not_ready), if (hidDevice != null) Color.Green else Color.Red)
+
+            var vibrationEnabled by remember { mutableStateOf(IsVibrationEnabled) }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.vibration), color = Color.LightGray)
+                Switch(
+                    checked = vibrationEnabled,
+                    onCheckedChange = {
+                        vibrationEnabled = it
+                        IsVibrationEnabled = it
+                    }
+                )
+            }
             
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),

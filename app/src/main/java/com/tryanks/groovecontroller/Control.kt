@@ -6,11 +6,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.platform.LocalContext
 import kotlin.math.atan2
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun Control(modifier: Modifier = Modifier, action: (ControlEvent) -> Unit = {}) {
+    val context = LocalContext.current
     var direction by remember { mutableStateOf(ControlEvent.None) }
     var lastSentDirection by remember { mutableStateOf(ControlEvent.None) }
     val state = remember { object {
@@ -88,6 +90,9 @@ fun Control(modifier: Modifier = Modifier, action: (ControlEvent) -> Unit = {}) 
             }
         }
         if (direction != lastSentDirection) {
+            if (direction != ControlEvent.None && IsVibrationEnabled) {
+                VibrationHelper.vibrate(context)
+            }
             action(direction)
             lastSentDirection = direction
         }
