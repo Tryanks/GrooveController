@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
@@ -179,12 +180,12 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("Groove Controller Setup", color = Color.White, fontSize = 24.sp)
+            Text(stringResource(R.string.setup_title), color = Color.White, fontSize = 24.sp)
             Spacer(modifier = Modifier.height(32.dp))
 
-            StatusRow("HID Service", if (hidDevice != null) "Ready" else "Not Ready", if (hidDevice != null) Color.Green else Color.Red)
-            StatusRow("Registration", if (isRegistered) "Registered" else "Not Registered", if (isRegistered) Color.Green else Color.Red)
-            StatusRow("Host Connection", if (hostDevice != null) hostDevice?.name ?: "Connected" else "Disconnected", if (hostDevice != null) Color.Green else Color.Red)
+            StatusRow(stringResource(R.string.hid_service), if (hidDevice != null) stringResource(R.string.ready) else stringResource(R.string.not_ready), if (hidDevice != null) Color.Green else Color.Red)
+            StatusRow(stringResource(R.string.registration), if (isRegistered) stringResource(R.string.registered) else stringResource(R.string.not_registered), if (isRegistered) Color.Green else Color.Red)
+            StatusRow(stringResource(R.string.host_connection), if (hostDevice != null) hostDevice?.name ?: stringResource(R.string.connected) else stringResource(R.string.disconnected), if (hostDevice != null) Color.Green else Color.Red)
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -197,7 +198,7 @@ class MainActivity : ComponentActivity() {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Register HID Keyboard & Make Discoverable")
+                Text(stringResource(R.string.register_btn))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -207,7 +208,7 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
             ) {
-                Text("Minimize App")
+                Text(stringResource(R.string.minimize_btn))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -218,7 +219,7 @@ class MainActivity : ComponentActivity() {
                 enabled = isRegistered,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
             ) {
-                Text("Enter Controller Mode")
+                Text(stringResource(R.string.enter_controller_btn))
             }
         }
     }
@@ -295,11 +296,11 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("即将退出", color = Color.White, fontSize = 20.sp)
+                        Text(stringResource(R.string.exiting), color = Color.White, fontSize = 20.sp)
                     }
                 } else if (isTopRightPressed || isBottomRightPressed) {
                     Text(
-                        "同时按住两个退出按钮才能退出",
+                        stringResource(R.string.exit_hint),
                         color = Color.White,
                         fontSize = 18.sp
                     )

@@ -34,8 +34,8 @@ interface BasicDescriptor {
 }
 
 class KeyboardDesc: BasicDescriptor {
-    override val name = "Groove Coaster Keyboard"
-    override val description = "A Controller emulator for Groove Coaster"
+    override val name = "Groove Coaster 键盘"
+    override val description = "Groove Coaster 控制器模拟器"
     override val providerName = "Tryanks"
     override val subClass: Byte = BluetoothHidDevice.SUBCLASS1_KEYBOARD
     override val descReport: ByteArray = intArrayOf(
@@ -147,8 +147,8 @@ class KeyboardDesc: BasicDescriptor {
 }
 
 class JoystickDesc(): BasicDescriptor {
-    override val name = "Groove Coaster Joystick"
-    override val description = "A Controller emulator for Groove Coaster"
+    override val name = "Groove Coaster 摇杆"
+    override val description = "Groove Coaster 控制器模拟器"
     override val providerName = "Tryanks"
     override val subClass: Byte = BluetoothHidDevice.SUBCLASS2_JOYSTICK
     override val descReport: ByteArray = intArrayOf(

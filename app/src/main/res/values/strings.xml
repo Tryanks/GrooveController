@@ -1,3 +1,18 @@
 <resources>
     <string name="app_name">GrooveController</string>
+    <string name="setup_title">Groove Controller 设置</string>
+    <string name="hid_service">HID 服务</string>
+    <string name="ready">就绪</string>
+    <string name="not_ready">未就绪</string>
+    <string name="registration">注册状态</string>
+    <string name="registered">已注册</string>
+    <string name="not_registered">未注册</string>
+    <string name="host_connection">主机连接</string>
+    <string name="connected">已连接</string>
+    <string name="disconnected">未连接</string>
+    <string name="register_btn">注册 HID 键盘并开启蓝牙可见</string>
+    <string name="minimize_btn">最小化应用</string>
+    <string name="enter_controller_btn">进入控制器模式</string>
+    <string name="exiting">即将退出</string>
+    <string name="exit_hint">同时按住两个退出按钮才能退出</string>
 </resources>
