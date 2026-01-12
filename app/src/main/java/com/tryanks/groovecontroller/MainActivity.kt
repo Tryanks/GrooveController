@@ -57,8 +57,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            GrooveControllerTheme(true) {
-                Surface(color = Color.Black, modifier = Modifier.fillMaxSize()) {
+            GrooveControllerTheme {
+                Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
                     if (currentScreen == AppScreen.Setup) {
                         SetupScreen()
                     } else {
@@ -171,7 +171,7 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(stringResource(R.string.setup_title), color = Color.White, fontSize = 24.sp)
+            Text(stringResource(R.string.setup_title), color = MaterialTheme.colorScheme.onBackground, fontSize = 24.sp)
             Spacer(modifier = Modifier.height(32.dp))
 
             StatusRow(stringResource(R.string.hid_service), if (hidDevice != null) stringResource(R.string.ready) else stringResource(R.string.not_ready), if (hidDevice != null) Color.Green else Color.Red)
@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.vibration), color = Color.LightGray)
+                Text(stringResource(R.string.vibration), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Switch(
                     checked = vibrationEnabled,
                     onCheckedChange = {
@@ -197,13 +197,13 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.simulation_mode), color = Color.LightGray)
+                Text(stringResource(R.string.simulation_mode), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row {
                     TextButton(
                         onClick = { hid = KeyboardDesc() },
                         enabled = !isRegistered,
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = if (hid is KeyboardDesc) Color.Cyan else Color.Gray
+                            contentColor = if (hid is KeyboardDesc) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         )
                     ) {
                         Text(stringResource(R.string.keyboard))
@@ -212,7 +212,7 @@ class MainActivity : ComponentActivity() {
                         onClick = { hid = GamepadDesc() },
                         enabled = !isRegistered,
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = if (hid is GamepadDesc) Color.Cyan else Color.Gray
+                            contentColor = if (hid is GamepadDesc) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         )
                     ) {
                         Text(stringResource(R.string.gamepad))
@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
                 onClick = { currentScreen = AppScreen.Controller },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = isRegistered,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Blue)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(stringResource(R.string.enter_controller_btn))
             }
@@ -257,7 +257,7 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(label, color = Color.LightGray)
+            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, color = valueColor)
         }
     }
@@ -300,11 +300,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         ) {
+            val contentColor = MaterialTheme.colorScheme.onBackground
             Column(modifier = Modifier.fillMaxSize()) {
                 Control(Modifier.fillMaxWidth().weight(1f)) { event ->
                     sendReport(event, if (Orientation == 0) ControlType.Left else ControlType.Right, "LEFT")
                 }
-                Divider(color = Color.White, thickness = 2.dp, modifier = Modifier.fillMaxWidth())
+                Divider(color = contentColor, thickness = 2.dp, modifier = Modifier.fillMaxWidth())
                 Control(Modifier.fillMaxWidth().weight(1f)) { event ->
                     sendReport(event, if (Orientation != 0) ControlType.Left else ControlType.Right, "RIGHT")
                 }
@@ -319,16 +320,16 @@ class MainActivity : ComponentActivity() {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(
                             progress = exitProgress,
-                            color = Color.White,
+                            color = contentColor,
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(stringResource(R.string.exiting), color = Color.White, fontSize = 20.sp)
+                        Text(stringResource(R.string.exiting), color = contentColor, fontSize = 20.sp)
                     }
                 } else if (isTopRightPressed || isBottomRightPressed) {
                     Text(
                         stringResource(R.string.exit_hint),
-                        color = Color.White,
+                        color = contentColor,
                         fontSize = 18.sp
                     )
                 }
@@ -341,7 +342,7 @@ class MainActivity : ComponentActivity() {
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
                     .background(
-                        color = if (isTopRightPressed) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                        color = if (isTopRightPressed) contentColor.copy(alpha = 0.4f) else contentColor.copy(alpha = 0.1f),
                         shape = CircleShape
                     )
             )
@@ -353,7 +354,7 @@ class MainActivity : ComponentActivity() {
                     .align(Alignment.BottomEnd)
                     .padding(16.dp)
                     .background(
-                        color = if (isBottomRightPressed) Color.White.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.1f),
+                        color = if (isBottomRightPressed) contentColor.copy(alpha = 0.4f) else contentColor.copy(alpha = 0.1f),
                         shape = CircleShape
                     )
             )

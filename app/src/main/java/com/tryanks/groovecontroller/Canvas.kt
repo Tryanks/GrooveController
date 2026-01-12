@@ -9,21 +9,21 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import kotlin.math.cos
 import kotlin.math.sin
 
-fun DrawScope.drawTap(canvasSize: Size, radiusPercentage: Float, strokeWidth: Float) {
+fun DrawScope.drawTap(canvasSize: Size, radiusPercentage: Float, strokeWidth: Float, color: Color) {
     val circleRadius = minOf(canvasSize.width, canvasSize.height) * radiusPercentage
     val circleCenter = Offset(x = canvasSize.width / 2, y = canvasSize.height / 2)
     drawCircle(
-        color = Color.White,
+        color = color,
         center = circleCenter,
         radius = circleRadius,
         style = Stroke(width = strokeWidth)
     )
 }
 
-fun DrawScope.drawArrow(canvasSize: Size, strokeWidth: Float, rotate: ControlEvent) {
+fun DrawScope.drawArrow(canvasSize: Size, strokeWidth: Float, rotate: ControlEvent, color: Color) {
     if (rotate == ControlEvent.None) return
     if (rotate == ControlEvent.Tap) {
-        drawTap(canvasSize, 0.3f, 50f)
+        drawTap(canvasSize, 0.3f, 50f, color)
         return
     }
 
@@ -63,7 +63,7 @@ fun DrawScope.drawArrow(canvasSize: Size, strokeWidth: Float, rotate: ControlEve
     arrowHeadLeft += canvasCenter
     arrowHeadRight += canvasCenter
 
-    drawLine(color = Color.White, start = arrowStart, end = arrowEnd, strokeWidth = strokeWidth)
+    drawLine(color = color, start = arrowStart, end = arrowEnd, strokeWidth = strokeWidth)
 
     val arrowHeadPath = Path().apply {
         moveTo(arrowEnd.x, arrowEnd.y)
@@ -71,7 +71,7 @@ fun DrawScope.drawArrow(canvasSize: Size, strokeWidth: Float, rotate: ControlEve
         lineTo(arrowEnd.x, arrowEnd.y)
         lineTo(arrowHeadRight.x, arrowHeadRight.y)
     }
-    drawPath(color = Color.White, path = arrowHeadPath, style = Stroke(width = strokeWidth))
+    drawPath(color = color, path = arrowHeadPath, style = Stroke(width = strokeWidth))
 }
 
 fun Offset.rotate(degrees: Float): Offset {

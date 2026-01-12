@@ -2,16 +2,22 @@ package com.tryanks.groovecontroller
 
 import android.view.MotionEvent
 import androidx.compose.foundation.Canvas
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalContext
 import kotlin.math.atan2
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun Control(modifier: Modifier = Modifier, action: (ControlEvent) -> Unit = {}) {
+fun Control(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onBackground,
+    action: (ControlEvent) -> Unit = {}
+) {
     val context = LocalContext.current
     var direction by remember { mutableStateOf(ControlEvent.None) }
     var lastSentDirection by remember { mutableStateOf(ControlEvent.None) }
@@ -98,7 +104,7 @@ fun Control(modifier: Modifier = Modifier, action: (ControlEvent) -> Unit = {}) 
         }
         true
     }) {
-        drawArrow(size, 50f, direction)
+        drawArrow(size, 50f, direction, color)
     }
 }
 
